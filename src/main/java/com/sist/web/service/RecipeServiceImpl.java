@@ -15,45 +15,58 @@ import lombok.RequiredArgsConstructor;
 public class RecipeServiceImpl implements RecipeService{
     private final RecipeRepository rDao;
     private final ChefRepository cDao;
+    private final RecipeDetailRepository rdDao;
 
 	@Override
-	public List<Recipe> findByTitleContains(String title) {
+	public List<Recipe> findByTitleContains(String title,int page) {
 		// TODO Auto-generated method stub
-		return rDao.findByTitleContains(title);
-	}
-
-	@Override
-	public List<Recipe> findByChefContains(String chef) {
-		// TODO Auto-generated method stub
-		return rDao.findByChefContains(chef);
-	}
-
-	@Override
-	public List<Recipe> recipeListData(int page) {
-		// TODO Auto-generated method stub
-		// Pageable => 페이지 요청 정보 
-		// 페이지 번호 / 페이지 크기 , 정렬 조건 
-		Pageable pg=PageRequest.of(page-1,12,
+		final int ROWSIZE=12;
+		Pageable pg=PageRequest.of(page-1, ROWSIZE,
 				Sort.by(Sort.Direction.ASC,"no"));
 		/*
-		 *   실제 SQL문장 
-		 *   SELECT *
-		 *   FROM recipe 
-		 *   ORDER BY no ASC 
-		 *   OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-		 *         --- 0번 시작 
-		 *   JPA => 중심이 객체 단위로 사용 
-		 *               -------- @Entity
-		 *          객체 ===== Column (메소드) = ORM 
-		 *          => LinQ (c#)
-		 */
-		Page<Recipe> pList=rDao.findAll(pg);
+	     *   SELECT * 
+	     *   FROM recipe
+	     *   WHERE title LIKE '%데이터%'
+	     *   ORDER BY no ASC
+	     *   OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+         */
+		Page<Recipe> pList=rDao.findByTitleContains(title,pg);
 		List<Recipe> list=new ArrayList<Recipe>();
-		// Page => List변환 
-		if(pList!=null && pList.hasContent()) // 값이 존재
+		if(pList!=null && pList.hasContent())
 		{
 			list=pList.getContent();
 		}
+		return list;
+	}
+
+	@Override
+	public List<Recipe> findByChefContains(String chef,int page) {
+		// TODO Auto-generated method stub
+		final int ROWSIZE=12;
+		Pageable pg=PageRequest.of(page-1, ROWSIZE,
+				Sort.by(Sort.Direction.ASC,"no"));
+		/*
+		
+	     *   SELECT * 
+	     *   FROM recipe
+	     *   WHERE title LIKE '%데이터%'
+	     *   ORDER BY no ASC
+	     *   OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+         */
+		Page<Recipe> pList=rDao.findByChefContains(chef,pg);
+		List<Recipe> list=new ArrayList<Recipe>();
+		if(pList!=null && pList.hasContent())
+		{
+			list=pList.getContent();
+		}
+		return list;
+	}
+    
+	@Override
+	public List<Recipe> recipeListData(int page) {
+		// TODO Auto-generated method stub
+		int start=(page*12)-12;
+		List<Recipe> list=rDao.recipeListData(start);
 		return list;
 	}
 
@@ -94,6 +107,42 @@ public class RecipeServiceImpl implements RecipeService{
 			list=pList.getContent();
 		}
 		return list;
+	}
+
+	@Override
+	public int[] getPageDataFind(int mode,int page, int rowsize,String fd) {
+		// TODO Auto-generated method stub
+		int count=0;
+		if(mode==1)
+		{
+			count=(int)rDao.countByTitleContains(fd);
+		}
+		else
+		{
+			count=(int)rDao.countByChefContains(fd);
+		}
+		
+		int totalpage=(int)(Math.ceil(count/12.0));
+		int startPage=((page-1)/10*10)+1;
+		int endPage=((page-1)/10*10)+10;
+		if(endPage>totalpage)
+			endPage=totalpage;
+		int[] pages= {page,totalpage,startPage,endPage};
+		
+		return pages;
+		
+	}
+
+	@Override
+	public int recipeCount() {
+		// TODO Auto-generated method stub
+		return rDao.recipeCount();
+	}
+
+	@Override
+	public RecipeDetail findByNo(int no) {
+		// TODO Auto-generated method stub
+		return rdDao.findByNo(no);
 	}
     
 }
